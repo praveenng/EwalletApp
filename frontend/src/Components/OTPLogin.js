@@ -17,7 +17,7 @@ export default function OTPLogin() {
 
     useEffect(() => {
         //  fetchData()
-        axios.get('http://localhost:8082/ewallet.com/user/getUser/' + id)
+        axios.get('user/getUser/' + id)
             .then((response) => {
                 setMobileNumber(response.data.mobileNumber)
                 setEmailId(response.data.emailId)
@@ -29,7 +29,7 @@ export default function OTPLogin() {
 
         let userDetails = new FormData(event.target);
         userDetails.set('password', sha256(userDetails.get('password')));
-        axios.post('http://localhost:8082/ewallet.com/user/login', userDetails).then((response) => {
+        axios.post('user/login', userDetails).then((response) => {
             if (response.data.errorMsg) {
                 alert(response.data.errorMsg);
             } else if (response.data.success) {
@@ -41,7 +41,7 @@ export default function OTPLogin() {
     }
 
     const getOTP = () => {
-        axios.get('http://localhost:8082/ewallet.com/user/getOtp/' + id)
+        axios.get('user/getOtp/' + id)
             .then((response) => {
                 alert(response.data.successErrorMsg)
             });

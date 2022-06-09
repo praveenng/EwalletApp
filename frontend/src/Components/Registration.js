@@ -42,7 +42,7 @@ export default function Registration() {
 
     const fetchData = async () => {
         try {
-            const response = await axios.get('/user/getMasterData');
+            const response = await axios.get('user/getMasterData');
             console.log(JSON.stringify(response.data.bankMaster));
             setBankData(response.data.bankMaster)
         } catch (error) {
@@ -56,7 +56,7 @@ export default function Registration() {
         let userDetails = new FormData(event.target);
         userDetails.set('password', sha256(userDetails.get('password')));
         userDetails.set('confirmPassword', sha256(userDetails.get('confirmPassword')));
-        axios.post('/user/registration', userDetails).then((response) => {
+        axios.post('user/registration', userDetails).then((response) => {
             if (response.data.errorMsgMap) {
                 Object.entries(response.data.errorMsgMap).map(([key, value]) => {
                     alert(value)
@@ -75,7 +75,7 @@ export default function Registration() {
     const onFileChangeHandler = (e) => {
         e.preventDefault()
         const bankFileObject = new FormData(e.target);
-        axios.post('/user/uploadUserBankFile', bankFileObject).then((response) => {
+        axios.post('user/uploadUserBankFile', bankFileObject).then((response) => {
             var responseObject = response.data;
             var errorMsg = responseObject.errorMsg;
             var successMsg = responseObject.successMsg;

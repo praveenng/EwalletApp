@@ -2,13 +2,11 @@ import { useState } from 'react';
 import axios from 'axios';
 import { sha256 } from 'js-sha256';
 import { Link, useNavigate } from 'react-router-dom';
-import { encrytParam } from '../Services/encrypt';
+import { encrytParam } from '../Services/Encrypt';
 
 const Login = () => {
     const [inputs, setInputs] = useState({});
     const navigate = useNavigate();
-    const [loginId, setLoginId] = useState("");
-    const [password, setPassword] = useState("");
     const [captcha, setCaptcha] = useState("");
 
 
@@ -24,7 +22,7 @@ const Login = () => {
         let userDetails = new FormData(event.target);
         userDetails.set('password', sha256(userDetails.get('password')));
 
-        axios.post('http://localhost:8082/ewallet.com/user/login', null, {
+        axios.post('user/login', null, {
             params: {
                 loginId: userDetails.get('loginId'),
                 password: userDetails.get('password'),

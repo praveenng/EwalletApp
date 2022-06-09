@@ -71,7 +71,7 @@ create table users(
 
 ALTER TABLE users ADD CONSTRAINT users_id_pk PRIMARY KEY(id);
 alter table users add constraint bank_id_fk foreign key (bank_id) references bank_master(id);
-alter table users add column bank_file_name varchar(150);
+alter table users add column bank_file_name varchar(150) null;
 alter table users add column wallet_balance numeric(20,2) default 0.00;
 
 CREATE TABLE ewallet_logs(
