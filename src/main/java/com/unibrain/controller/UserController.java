@@ -1,14 +1,20 @@
 package com.unibrain.controller;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
@@ -25,6 +31,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,8 +42,10 @@ import com.unibrain.entity.BankMaster;
 import com.unibrain.entity.EwalletLog;
 import com.unibrain.entity.User;
 import com.unibrain.enums.ApplicationLogEnum;
+import com.unibrain.enums.EmailEventEnum;
 import com.unibrain.enums.EnableDisableEnum;
 import com.unibrain.enums.UserTypeEnum;
+import com.unibrain.service.EmailAndMessageService;
 import com.unibrain.service.EwalletLogService;
 import com.unibrain.service.FileActivityService;
 import com.unibrain.service.UserService;
@@ -45,13 +54,13 @@ import com.unibrain.validator.UserValidator;
 
 @RestController
 @RequestMapping("user")
-public class UserController {
+public class UserController extends BaseController {
 
 	@Autowired
-	UserService userService;
+	private UserService userService;
 
 	@Autowired
-	MessageSource messageSource;
+	private MessageSource messageSource;
 
 	@Autowired
 	private EwalletLogService ewalletLogService;
@@ -61,6 +70,9 @@ public class UserController {
 
 	@Autowired
 	private FileActivityService fileActivityService;
+
+	@Autowired
+	private EmailAndMessageService emailAndMessageService;
 
 	private final static Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -163,11 +175,24 @@ public class UserController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<Object> login(@ModelAttribute("userLogin") User user, HttpServletRequest request) {
+	public ResponseEntity<Object> login(@RequestParam("loginId") String loginId,
+			@RequestParam("password") String password, @RequestParam("captcha") String captcha,
+			HttpServletRequest request) {
 
 		Map<String, Object> responseMap = new HashMap<>();
+		ResponseEntity<Object> responseEntity = new ResponseEntity<Object>(responseMap, new HttpHeaders(),
+				HttpStatus.OK);
 
-		User userFromDB = userService.getUserByLoginId(user.getLoginId());
+		HttpSession httpSession = request.getSession();
+		String captchaFromSession = (String) httpSession.getAttribute("captcha");
+
+		// if ((captcha != null && !captcha.equals(captchaFromSession))) {
+		// logger.info("Invalid captcha..");
+		// responseMap.put("errorMsg", "Invalid Captcha");
+		// return responseEntity;
+		// }
+
+		User userFromDB = userService.getUserByLoginId(loginId);
 
 		String errorMsg = null;
 
@@ -180,12 +205,11 @@ public class UserController {
 		LocalDateTime localDateTime = LocalDateTime.now();
 
 		if (errorMsg == null) {
-			boolean isValidUser = pbkdf2WithHmacSHA256.validatePassword(user.getPassword().trim(),
+			boolean isValidUser = pbkdf2WithHmacSHA256.validatePassword(password.trim(),
 					userFromDB.getPassword().trim());
 
 			if (isValidUser == false) {
 				logger.info("Invalid Password");
-				System.out.println("Invalid Password");
 				errorMsg = "Invalid Password";
 
 				ewalletLog = ewalletLogService.prepareEwalletLog(userFromDB.getLoginId(), userFromDB.getEwalletId(),
@@ -197,7 +221,7 @@ public class UserController {
 
 		if (errorMsg != null) {
 			responseMap.put("errorMsg", errorMsg);
-			return new ResponseEntity<Object>(responseMap, new HttpHeaders(), HttpStatus.OK);
+			return responseEntity;
 		}
 
 		ewalletLog = ewalletLogService.prepareEwalletLog(userFromDB.getLoginId(), userFromDB.getEwalletId(),
@@ -208,13 +232,14 @@ public class UserController {
 		logger.info("User login successful???" + isSaved);
 		if (isSaved) {
 			storeSessionValues(userFromDB, request);
-			responseMap.put("success", true);
+			responseMap.put("isValidUser", true);
+			responseMap.put("id", userFromDB.getId());
 		} else {
 			errorMsg = "Something went wrong. Please retry.";
 			responseMap.put("errorMsg", errorMsg);
 		}
 
-		return new ResponseEntity<Object>(responseMap, new HttpHeaders(), HttpStatus.OK);
+		return responseEntity;
 	}
 
 	public void storeSessionValues(User loginUser, HttpServletRequest request) {
@@ -229,8 +254,7 @@ public class UserController {
 
 	@PostMapping("/uploadUserBankFile")
 	public ResponseEntity<Object> uploadUserBankFile(@RequestParam("id") Integer id,
-			@RequestParam("bankFile") MultipartFile bankFile, HttpServletRequest request,
-			HttpServletResponse response) {
+			@RequestParam("bankFile") MultipartFile bankFile, HttpServletRequest request) {
 
 		Map<String, Object> responseMap = new HashMap<>();
 
@@ -247,7 +271,7 @@ public class UserController {
 
 		errorMsg = fileActivityService.validateAndSaveBankFile(bankFile, bankFilePath);
 		logger.info("errorMsg===============" + errorMsg);
-		
+
 		if (errorMsg == null) {
 
 			LocalDateTime localDateTime = LocalDateTime.now();
@@ -263,6 +287,10 @@ public class UserController {
 				successMsg = "File uploaded successfully!";
 				responseMap.put("successMsg", successMsg);
 			} else {
+				File file = new File(bankFilePath + fileName);
+				if (file.exists()) {
+					file.delete();
+				}
 				errorMsg = "Failed to upload file!";
 				responseMap.put("errorMsg", errorMsg);
 			}
@@ -271,4 +299,145 @@ public class UserController {
 		return new ResponseEntity<Object>(responseMap, new HttpHeaders(), HttpStatus.OK);
 
 	}
+
+	@GetMapping("/getUser/{encId}")
+	public User getUser(@PathVariable("encId") String encId) {
+
+		Integer id = Integer.parseInt(getDecryptedValue(encId));
+		User user = userService.getUserById(id);
+		return user;
+	}
+
+	@GetMapping("/getOtp/{encUserId}")
+	public ResponseEntity<Object> getOTPSendEmailAndSMS(@PathVariable String encUserId, HttpServletRequest request) {
+
+		Map<String, Object> responseMap = new HashMap<>();
+		ResponseEntity<Object> responseEntity = new ResponseEntity<Object>(responseMap, new HttpHeaders(),
+				HttpStatus.OK);
+
+		HttpSession session = request.getSession();
+		Integer userId = Integer.parseInt(getDecryptedValue(encUserId));
+		User user = userService.getUserById(userId);
+
+		Random random = new Random();
+		String generatedOtp = String.format("%04d", random.nextInt(10000));
+
+		session.removeAttribute("otp");
+
+		if (generatedOtp != null && generatedOtp.length() == 4) {
+
+			logger.info("Inside message sender...");
+
+			// TO Send SMS through API
+			String key = "f86a7b6e-38bd-4fe7-ba72-b980d9019624";
+			String senderId = "EWIZRD";
+			String visitLink = "euniwizarde.com";
+			String text = "Dear Customer, " + generatedOtp + " is the OTP for login to " + visitLink
+					+ " Do not share with anyone by any means. This is confidential and to be used by you only.";
+			String mobileNo = user.getMobileNumber().trim();
+
+			URLConnection myURLConnection = null;
+			URL myURL = null;
+			BufferedReader reader = null;
+			// Send SMS API
+			String smsUrl = "https://teleduce.corefactors.in/sendsms/?";
+			// Prepare parameter string
+			StringBuilder sbPostData = new StringBuilder(smsUrl);
+			sbPostData.append("key=" + key);
+			sbPostData.append("&text=" + text);
+			sbPostData.append("&route=" + 0);
+			sbPostData.append("&from=" + senderId);
+			sbPostData.append("&to=" + mobileNo);
+			// final string
+			smsUrl = sbPostData.toString();
+			try {
+				// prepare connection
+				myURL = new URL(smsUrl);
+				myURLConnection = myURL.openConnection();
+				myURLConnection.connect();
+				reader = new BufferedReader(new InputStreamReader(myURLConnection.getInputStream()));
+				reader.close();
+				logger.info("Message sent sucessfully..");
+			} catch (IOException e) {
+				e.printStackTrace();
+				responseMap.put("successErrorMsg", "Something went wrong!");
+				responseMap.put("isOTPgenerated", false);
+				return responseEntity;
+			}
+
+			try {
+				emailAndMessageService.buildEmailContent(user.getEmailId().trim(),
+						EmailEventEnum.OTP_based_login.getEmailEventValue(), request, String.valueOf(user.getId()),
+						generatedOtp, visitLink);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			session.setAttribute("otp", generatedOtp);
+			responseMap.put("successErrorMsg", "OTP Sent SuccessFully to your Mobile number and E-mail");
+			responseMap.put("isOTPgenerated", true);
+		} else {
+			responseMap.put("successErrorMsg", "Illegal Access");
+			responseMap.put("isOTPgenerated", false);
+		}
+
+		return responseEntity;
+	}
+
+	@PostMapping("/validateOtpLogin/{encUserId}")
+	public ResponseEntity<Object> validateOtpLogin(@PathVariable String encUserId, HttpServletRequest request) {
+
+		Map<String, Object> responseMap = new HashMap<>();
+		ResponseEntity<Object> responseEntity = new ResponseEntity<Object>(responseMap, new HttpHeaders(),
+				HttpStatus.OK);
+
+		HttpSession session = request.getSession();
+		Integer id = Integer.parseInt(getDecryptedValue(encUserId));
+		Integer sessionId = Integer.parseInt(session.getAttribute("id").toString());
+		User user = userService.getUserById(id);
+
+		String errorMsg = null;
+		responseMap.put("isOTPValidated", false);
+
+		Boolean isValid = false;
+		isValid = id.equals(sessionId);
+
+		if (!isValid) {
+			session.removeAttribute("otp");
+			errorMsg = "Logged in User is Not Valid";
+			responseMap.put("successErrorMsg", errorMsg);
+			return responseEntity;
+		}
+
+		isValid = user.getEmailId().equals(request.getParameter("emailId"));
+
+		if (!isValid) {
+			session.removeAttribute("otp");
+			errorMsg = "Registered Email is Not Matching With Entered Email in OTP Screen";
+			responseMap.put("successErrorMsg", errorMsg);
+			return responseEntity;
+		}
+
+		isValid = user.getMobileNumber().equals(request.getParameter("mobileNumber"));
+
+		if (!isValid) {
+			session.removeAttribute("otp");
+			errorMsg = "Registered Mobile Number is Not Matching With Entered Mobile Number in OTP Screen";
+			responseMap.put("successErrorMsg", errorMsg);
+			return responseEntity;
+		}
+
+		isValid = session.getAttribute("otp").equals(request.getParameter("otp"));
+
+		if (isValid) {
+			responseMap.put("isOTPValidated", true);
+			return responseEntity;
+		} else {
+			session.removeAttribute("otp");
+			errorMsg = "OTP is Invalid, Please Re-send OTP and Login";
+			responseMap.put("successErrorMsg", errorMsg);
+			return responseEntity;
+		}
+	}
+
 }

@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { sha256 } from 'js-sha256';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { encrytParam } from '../Services/encrypt';
 
 const Login = () => {
     const [inputs, setInputs] = useState({});
+    const navigate = useNavigate();
+    const [loginId, setLoginId] = useState("");
+    const [password, setPassword] = useState("");
+    const [captcha, setCaptcha] = useState("");
+
 
     const handleChange = (event) => {
         const name = event.target.name;
@@ -17,12 +23,20 @@ const Login = () => {
 
         let userDetails = new FormData(event.target);
         userDetails.set('password', sha256(userDetails.get('password')));
-        axios.post('/user/login', userDetails).then((response) => {
+
+        axios.post('http://localhost:8082/ewallet.com/user/login', null, {
+            params: {
+                loginId: userDetails.get('loginId'),
+                password: userDetails.get('password'),
+                captcha:captcha
+            }
+        }).then((response) => {
             if (response.data.errorMsg) {
                 alert(response.data.errorMsg);
-            } else if (response.data.success){
+            } else if (response.data.isValidUser) {
                 alert('Login successful!');
-                document.getElementById('ewallet').click();
+                var encParam = encrytParam(response.data.id.toString());
+                navigate("/OTPLogin/" + encParam);
             } else {
                 alert('Something went wrong. Please retry!');
             }
@@ -31,7 +45,6 @@ const Login = () => {
     }
 
     return (
-        <div>
         <form onSubmit={handleSubmit}>
             <div className="row">
                 <div className="col-sm-1"></div>
@@ -66,10 +79,6 @@ const Login = () => {
 
             <Link to="/Registration" >  <button type="button" className=" btn btn-sm btn-primary themebutton">Register</button></Link>
         </form>
-        <div>
-        <Link to={{pathname : "/EWallet"}} style={{color : 'blue',display:'none'}} id="ewallet">Deposit to EWallet</Link>
-        </div>
-        </div>
     )
 }
 export default Login;

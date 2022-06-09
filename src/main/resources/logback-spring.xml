@@ -59,14 +59,14 @@
 			queue is 80% full -->
 		<appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
 			<appender-ref ref="RollingFile" />
-			<!-- defaulr 256 -->
+			<!-- default 256 -->
 			<queueSize>512</queueSize>
 		</appender>
 
 		<root level="INFO">
 			<appender-ref ref="CA" />
 			<appender-ref ref="ASYNC" />
-			<appender-ref ref="emailAppender" />
+			<!-- <appender-ref ref="emailAppender" /> -->
 		</root>
 	</springProfile>
 
@@ -112,7 +112,7 @@
 			queue is 80% full -->
 		<appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
 			<appender-ref ref="RollingFile" />
-			<!-- defaulr 256 -->
+			<!-- default 256 -->
 			<queueSize>512</queueSize>
 		</appender>
 

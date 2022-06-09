@@ -7,6 +7,7 @@ import NoPage from './Components/NoPage';
 import Payment from './Components/Payment';
 import PaymentSuccessfully from './Components/PaymentSuccessfully';
 import Ewallet from './Components/Ewallet';
+import OTPLogin from './Components/OTPLogin';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route exact path="/Payment" element={<Payment/>}/>
         <Route exact path='/PaymentSuccessfully' element={<PaymentSuccessfully/>}/>
         <Route exact path='/EWallet' element={<Ewallet/>}/>
+        <Route exact path="/OTPLogin/:id" element={<OTPLogin/>}/>
       </Routes>
     </BrowserRouter>
   );
