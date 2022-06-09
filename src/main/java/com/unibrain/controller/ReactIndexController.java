@@ -19,7 +19,9 @@ public class ReactIndexController extends BaseController implements ErrorControl
 
 	@RequestMapping(value = { "/" })
 	public String getReactIndexPage(HttpServletRequest request) {
+		
 		return "/index.html";
+		
 	}
 
 	@RequestMapping(value = ERROR_PATH)
