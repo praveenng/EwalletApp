@@ -69,7 +69,7 @@ public class PaymentDaoImpl  implements PaymentDao{
 		Session session = sessionFactory.openSession();
 		@SuppressWarnings("unchecked")
 		Query<EwalletTransaction> checkAccountNumberExist = session
-				.createQuery("from Payments where paymentEwalletReference=:payment_ebid_reference");
+				.createQuery("from EwalletTransaction where paymentEwalletReference=:payment_ebid_reference");
 		checkAccountNumberExist.setParameter("payment_ebid_reference", accountNumber);
 		EwalletTransaction result = null;
 		try{

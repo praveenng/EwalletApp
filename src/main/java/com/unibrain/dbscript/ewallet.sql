@@ -7,7 +7,6 @@ CREATE TABLE bank_master
    bank_name VARCHAR (150)
 );
 ALTER TABLE bank_master ADD CONSTRAINT bank_master_id_pk PRIMARY KEY (id);
-alter table users add constraint bank_id_fk foreign key (bank_id) references bank_master(id);
 
 INSERT into bank_master values(default,'State Bank of India'); 
 INSERT into bank_master values(default,'ICICI'); 
@@ -72,6 +71,8 @@ create table users(
 
 ALTER TABLE users ADD CONSTRAINT users_id_pk PRIMARY KEY(id);
 alter table users add constraint bank_id_fk foreign key (bank_id) references bank_master(id);
+alter table users add column bank_file_name varchar(150);
+alter table users add column wallet_balance numeric(20,2) default 0.00;
 
 CREATE TABLE ewallet_logs(
 	id SERIAL,
