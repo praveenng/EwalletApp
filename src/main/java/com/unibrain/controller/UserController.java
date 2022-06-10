@@ -231,7 +231,7 @@ public class UserController extends BaseController {
 		Boolean isSaved = ewalletLogService.saveEwalletLog(ewalletLog);
 		logger.info("User login successful???" + isSaved);
 		if (isSaved) {
-			storeSessionValues(userFromDB, request);
+			storeMinimumSessionValues(userFromDB, request);
 			responseMap.put("isValidUser", true);
 			responseMap.put("id", userFromDB.getId());
 		} else {
@@ -242,14 +242,12 @@ public class UserController extends BaseController {
 		return responseEntity;
 	}
 
-	public void storeSessionValues(User loginUser, HttpServletRequest request) {
+	public void storeMinimumSessionValues(User loginUser, HttpServletRequest request) {
 		HttpSession session = request.getSession();
 		session.setAttribute("id", loginUser.getId());
 		session.setAttribute("loginId", loginUser.getLoginId());
-		session.setAttribute("ewalletId", loginUser.getEwalletId());
-		session.setAttribute("userIndividualOrCompanyName", loginUser.getIndividualOrCompanyName());
 		session.setAttribute("userType", loginUser.getUserType());
-		logger.info("Setting up session values...");
+		logger.info("Setting up minimum session values...");
 	}
 
 	@PostMapping("/uploadUserBankFile")
@@ -385,13 +383,17 @@ public class UserController extends BaseController {
 	}
 
 	@PostMapping("/validateOtpLogin/{encUserId}")
-	public ResponseEntity<Object> validateOtpLogin(@PathVariable String encUserId, HttpServletRequest request) {
+	public ResponseEntity<Object> validateOtpLogin(@PathVariable String encUserId,
+			@RequestParam(name = "mobileNumber", required = true) String mobileNumber,
+			@RequestParam(name = "emailId", required = true) String emailId,
+			@RequestParam(name = "otp", required = true) String otp, HttpServletRequest request) {
 
 		Map<String, Object> responseMap = new HashMap<>();
 		ResponseEntity<Object> responseEntity = new ResponseEntity<Object>(responseMap, new HttpHeaders(),
 				HttpStatus.OK);
 
 		HttpSession session = request.getSession();
+
 		Integer id = Integer.parseInt(getDecryptedValue(encUserId));
 		Integer sessionId = Integer.parseInt(session.getAttribute("id").toString());
 		User user = userService.getUserById(id);
@@ -406,37 +408,77 @@ public class UserController extends BaseController {
 			session.removeAttribute("otp");
 			errorMsg = "Logged in User is Not Valid";
 			responseMap.put("successErrorMsg", errorMsg);
+			logger.info("Error:::" + errorMsg);
 			return responseEntity;
 		}
 
-		isValid = user.getEmailId().equals(request.getParameter("emailId"));
+		isValid = user.getEmailId().equals(emailId);
 
 		if (!isValid) {
 			session.removeAttribute("otp");
 			errorMsg = "Registered Email is Not Matching With Entered Email in OTP Screen";
 			responseMap.put("successErrorMsg", errorMsg);
+			logger.info("Error:::" + errorMsg);
 			return responseEntity;
 		}
 
-		isValid = user.getMobileNumber().equals(request.getParameter("mobileNumber"));
+		isValid = user.getMobileNumber().equals(mobileNumber);
 
 		if (!isValid) {
 			session.removeAttribute("otp");
 			errorMsg = "Registered Mobile Number is Not Matching With Entered Mobile Number in OTP Screen";
 			responseMap.put("successErrorMsg", errorMsg);
+			logger.info("Error:::" + errorMsg);
 			return responseEntity;
 		}
 
-		isValid = session.getAttribute("otp").equals(request.getParameter("otp"));
+		isValid = session.getAttribute("otp").equals(otp);
 
 		if (isValid) {
-			responseMap.put("isOTPValidated", true);
-			return responseEntity;
+			boolean storeSession = storeSessionValues(user, request);
+			LocalDateTime localDateTime = LocalDateTime.now();
+			if (storeSession) {
+				responseMap.put("isOTPValidated", true);
+				responseMap.put("successErrorMsg", "OTP validation is successful!");
+				logger.info("Otp validated successfully!!!!!");
+
+				EwalletLog ewalletLog = ewalletLogService.prepareEwalletLog(user.getLoginId(), user.getEwalletId(),
+						user.getIndividualOrCompanyName(), user.getUserType(), localDateTime, request,
+						ApplicationLogEnum.new_session_created.getApplicationLogValue());
+				ewalletLogService.saveEwalletLog(ewalletLog);
+
+			} else {
+				session.removeAttribute("otp");
+				errorMsg = "Something went wrong. Please try again.";
+				responseMap.put("successErrorMsg", errorMsg);
+				logger.info("Error:::" + errorMsg);
+			}
 		} else {
 			session.removeAttribute("otp");
 			errorMsg = "OTP is Invalid, Please Re-send OTP and Login";
 			responseMap.put("successErrorMsg", errorMsg);
-			return responseEntity;
+			logger.info("Error:::" + errorMsg);
+		}
+
+		return responseEntity;
+	}
+
+	public boolean storeSessionValues(User loginUser, HttpServletRequest request) {
+		HttpSession session = request.getSession();
+		session.invalidate();
+		session = request.getSession(false);
+		logger.info("Session after invalidate:::" + session);
+		if (session == null) {
+			session = request.getSession(true);
+			session.setAttribute("id", loginUser.getId());
+			session.setAttribute("loginId", loginUser.getLoginId());
+			session.setAttribute("ewalletId", loginUser.getEwalletId());
+			session.setAttribute("userIndividualOrCompanyName", loginUser.getIndividualOrCompanyName());
+			session.setAttribute("userType", loginUser.getUserType());
+			logger.info("Setting up session values...");
+			return true;
+		} else {
+			return false;
 		}
 	}
 

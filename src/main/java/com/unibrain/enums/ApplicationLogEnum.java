@@ -2,8 +2,9 @@ package com.unibrain.enums;
 
 public enum ApplicationLogEnum {
 
-	user_registration(1, "Ewallet User Registration"), user_login(2, "Ewallet User Login"), user_login_failure(3,
-			"User Login Failure"), user_bank_file_upload(4, "User Bank File Upload");
+	user_registration(1, "Ewallet User Registration"), user_login(2, "Ewallet User Login"),
+	user_login_failure(3, "User Login Failure"), user_bank_file_upload(4, "User Bank File Upload"),
+	new_session_created(5, "New Session Created");
 
 	private int applicationLogValue;
 	private String applicationLogName;

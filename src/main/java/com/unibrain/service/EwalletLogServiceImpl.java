@@ -58,11 +58,17 @@ public class EwalletLogServiceImpl implements EwalletLogService {
 					null);
 			clientOsBrowser(request, ewalletLog);
 			break;
-			
+
 		case 4:
 			applicationLogSubject = messageSource.getMessage("log.UploadUserBankFile.subject", null, null);
 			applicationLogMatter = messageSource.getMessage("log.UploadUserBankFile.matter", new String[] { args[0] },
 					null);
+			clientOsBrowser(request, ewalletLog);
+			break;
+
+		case 5:
+			applicationLogSubject = messageSource.getMessage("log.NewSessionCreated.subject", null, null);
+			applicationLogMatter = messageSource.getMessage("log.NewSessionCreated.matter", null, null);
 			clientOsBrowser(request, ewalletLog);
 			break;
 
