@@ -1,0 +1,115 @@
+body{
+	font-family: 'Open Sans', sans-serif;
+}
+.hq-template{
+	margin-top: 30px;
+	margin-bottom: 30px;
+	background-image: url(../img/login7-bg.svg);
+	background-repeat: no-repeat;
+	background-size: cover;
+	box-shadow: 0px 0px 20px 0px rgba(0,0,0,.2);
+	background-position: center;
+}
+.pic-block img{
+	width: 100%;
+	height: 100%;
+}
+
+.login-block{
+	margin: auto;
+	padding: 5%;
+}
+.login-block h3 {
+	text-align: center;
+	font-weight: 600;
+	color: #fed0b8;
+	text-transform: none;
+	margin-left: 65px;
+}
+.login-block input{
+	box-shadow: none !important;
+	outline: none !important;
+	border-radius: 10px;
+	color: #111;
+	transition: 0.6s;
+	padding-left: 30px;
+}
+.login-block input:focus{
+	border-color: #faab89!important;
+}
+.login-block input::placeholder{
+	color: #111;
+}
+.login-block svg{
+    margin-bottom: -70px;
+    margin-left: 10px;
+}
+.login-block .forgot{
+	color: #111;
+	float: right;
+	font-weight: 600;
+}
+.login-block .login-btn{
+	margin-top: 70px;
+	text-align: center;
+	margin-top: 36px;
+}
+.login-block .login-btn a{
+	text-decoration: none;
+	padding: 10px 30px;
+	background: #faab89;
+	border-radius: 10px;
+	color: #383838;
+	font-weight: 600;
+	text-transform: uppercase;
+	
+}
+.login-block p{
+	color: #383838;
+	margin-top: 20px;
+	font-weight: 600;
+	text-align: center;
+}
+.login-block p a {
+	color: #383838;
+	text-transform: uppercase;
+	font-weight: 600;
+}
+.copyright{
+  text-align: center; 
+    padding: 20px;
+    font-size: 16px;
+}
+.copyright a{
+  color: #cb7a5a !important;
+  font-weight: bold;
+}
+/*************************** media queries *************/
+@media only screen and (max-width: 750px){
+	.pic-block{
+		margin: auto;
+		margin-top: 20px;
+	}
+}
+
+.username{
+	border: 2px solid #6e8899; 
+	border-radius: 25px; 
+	padding: 25px;
+	width: 380px;
+}
+.pwd{
+	border-color:"#6e8899" ;
+	color: #080707; width: 50%;
+	background: white; border-radius: 10px;
+	height: 36px; padding: 0px 35px 0 25px; font-size: 14px;
+}
+.note{
+	color: red !important; 
+	margin-top:15px !important; 
+	font-weight: 400 !important;
+	padding: 0px 50px !important;
+}
+.link{
+	margin-top: 20px;
+}

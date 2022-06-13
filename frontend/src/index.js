@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import axios from 'axios';
-
+//import '../node_modules/font-awesome/css/font-awesome.min.css';
 
 axios.defaults.baseURL = process.env.REACT_APP_ROUTER_BASE;
 

@@ -1,13 +1,31 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { Fragment } from 'react';
+ import '../App.css';
+import {
+  Link,
+} from 'react-router-dom';
+import axios from 'axios';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import $ from 'jquery';
 
-const Home = () => {
-return (
-	<div>
-	<h6><Link to="/Login" >  <button type="button" className=" btn btn-sm btn-primary themebutton">Login</button></Link></h6>
-    <h6><Link to="/Registration" >  <button type="button" className=" btn btn-sm btn-primary themebutton">Register</button></Link></h6>
-	</div>
-);
-};
+export default class Home extends React.Component {
+  componentDidMount() {
+    axios.get('/erpAdminLogin/logout', null,).then((response) => {
+        console.log(response.data);
+    })
+}
 
-export default Home;
+  render() {
+    return (
+      <Fragment>
+       <span className="loadPageStyle">
+          <h1>eWallet</h1>
+          <h3><Link className="loadPageStyle linkStyle" to="/Wallethomepage/">Homepage</Link><br></br></h3>
+          
+        </span>
+        
+      
+      </Fragment>
+
+    );
+  }
+}

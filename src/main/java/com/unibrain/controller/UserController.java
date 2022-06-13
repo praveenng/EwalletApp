@@ -174,6 +174,28 @@ public class UserController extends BaseController {
 		return responseEntity;
 	}
 
+	@RequestMapping(value = "/getGeneratedCaptcha")
+	public String getGenearatedCaptcha(HttpServletRequest request) {
+		HttpSession httpSession = request.getSession();
+
+		int captchaLength = 5;
+
+		String saltChars = "ABCDEFGHJMNQRTUabcdefghjmnqrt123456789";
+		StringBuffer captchaStrBuffer = new StringBuffer();
+		java.util.Random rnd = new java.util.Random();
+
+		// build a random captchaLength chars salt
+		while (captchaStrBuffer.length() < captchaLength) {
+			int index = (int) (rnd.nextFloat() * saltChars.length());
+			captchaStrBuffer.append(saltChars.substring(index, index + 1));
+		}
+
+		String generatedCaptcha = captchaStrBuffer.toString();
+		httpSession.setAttribute("captcha", generatedCaptcha);
+		logger.info("Captcha generating..");
+		return generatedCaptcha;
+	}
+
 	@PostMapping("/login")
 	public ResponseEntity<Object> login(@RequestParam("loginId") String loginId,
 			@RequestParam("password") String password, @RequestParam("captcha") String captcha,
@@ -186,11 +208,11 @@ public class UserController extends BaseController {
 		HttpSession httpSession = request.getSession();
 		String captchaFromSession = (String) httpSession.getAttribute("captcha");
 
-		// if ((captcha != null && !captcha.equals(captchaFromSession))) {
-		// logger.info("Invalid captcha..");
-		// responseMap.put("errorMsg", "Invalid Captcha");
-		// return responseEntity;
-		// }
+		if ((captcha != null && !captcha.equals(captchaFromSession))) {
+			logger.info("Invalid captcha..");
+			responseMap.put("errorMsg", "Invalid Captcha");
+			return responseEntity;
+		}
 
 		User userFromDB = userService.getUserByLoginId(loginId);
 
