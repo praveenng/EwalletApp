@@ -37,6 +37,10 @@ import com.razorpay.Utils;
 import com.unibrain.entity.EwalletTransaction;
 import com.unibrain.entity.PaymentDetails;
 import com.unibrain.entity.User;
+import com.unibrain.enums.DebitCreditEnum;
+import com.unibrain.enums.PaymentGatewayBankEnum;
+import com.unibrain.enums.PaymentModeEnum;
+import com.unibrain.enums.PaymentModeMasterEnum;
 import com.unibrain.enums.PaymentStatusEnum;
 import com.unibrain.enums.TransactionFlagEnums;
 import com.unibrain.razorpayConstants.RazorPayConstants;
@@ -313,18 +317,23 @@ public class PaymentController {
 		}
 
 		EwalletTransaction payments = new EwalletTransaction();
-		payments.setPaymentTransactionReference(accountNumber);
+		payments.setPaymentEwalletReference(accountNumber);
 		payments.setPaymentInitiatedAmount(paymentDetails.getInitiatedAmount());
 		payments.setEwalletUserId(users.getId());
 		payments.setEwalletLoginId(users.getLoginId());
 		payments.setEwalletId(users.getEwalletId());
-		payments.setPaymentPrimaryMode('E');
-		payments.setPaymentModeId(6);
+		payments.setPaymentPrimaryMode(PaymentModeEnum.epayment.getPaymentModeCharacterValue());
+		payments.setPaymentModeId(PaymentModeMasterEnum.neft.getPaymentModeMasterId());
 		payments.setPaymentActualAmount(paymentDetails.getInitiatedAmount());
-		payments.setPaymentStatus(4);
-		payments.setPaymentCompletionStatus("Challan generated");
+		payments.setPaymentStatus(PaymentStatusEnum.challan_generated.getStatusValue());
+		payments.setPaymentCompletionStatus(PaymentStatusEnum.challan_generated.getStatusType());
+		payments.setPaymentInitiatedDate(LocalDateTime.now());
+		payments.setTransactionFlag(TransactionFlagEnums.Deposit.getFlag());
+		payments.setDebitCreditFlag(DebitCreditEnum.Credit.getDebitCreditFlag());
 		payments.setOrderId(orderId);
-
+		payments.setBankId(PaymentGatewayBankEnum.razorpay.getGateWayId());
+		payments.setBankName(PaymentGatewayBankEnum.razorpay.getGateWayDescription());
+		
 		Boolean isSaved = paymentService.saveInitiatedPayment(payments);
 		System.out.println("isSaved====" + isSaved);
 
@@ -359,20 +368,30 @@ public class PaymentController {
 			} else {
 				System.err.println("Valid amount");
 
-				payments.setPaymentTransactionReference(payment.getString(("id")));
-				payments.setPaymentStatus(1);
-				payments.setPaymentCompletionStatus("Success");
 
 				Integer commission = (Integer) payment.get("fee");
 				Double dCommission = (double) commission;
 				Double commissionD = dCommission / 100;
 				BigDecimal commissionAmount = new BigDecimal(commissionD).setScale(2, BigDecimal.ROUND_HALF_UP);
 				payments.setPaymentCommission(commissionAmount);
+				
+				Integer amountWithCommission = (Integer) payment.get("amount");
+				Double dAmountWithCommission = (double)amountWithCommission;
+				Double amountWithComm = dAmountWithCommission/100;
+				BigDecimal requestAmountWithCommission = new BigDecimal(amountWithComm).setScale(2, BigDecimal.ROUND_HALF_UP);
+				payments.setPaymentAmountWithCommission(requestAmountWithCommission);
 
+				payments.setPaymentTransactionReference(payment.getString(("id")));
+				payments.setPaymentStatus(PaymentStatusEnum.sucess.getStatusValue());
+				payments.setPaymentCompletionStatus(PaymentStatusEnum.sucess.getStatusType());
+				payments.setPaymentBankStatus(1);
+				payments.setPaymentReconciledDate(LocalDateTime.now());
 				User user = userService.getUserByEWalletId(payments.getEwalletId());
 
-				BigDecimal walletBalance = user.getWalletBalance().add(requestAmount);
+				BigDecimal walletBalance = user.getWalletBalance() != null ? user.getWalletBalance().add(requestAmount) : requestAmount;
 				user.setWalletBalance(walletBalance);
+				
+				payments.setCurrentBalance(walletBalance);
 
 				Boolean isUpdated = paymentService.updatePayment(payments, user);
 				System.err.println("isUpdated===" + isUpdated);
